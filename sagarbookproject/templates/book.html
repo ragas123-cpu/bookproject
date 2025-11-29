@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ book['title'] }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body class="bg-slate-50 p-6">
+    <a href="/" class="text-blue-600">⬅ Back</a>
+
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow mt-5">
+        <h1 class="text-3xl font-bold">{{ book['title'] }}</h1>
+        <p class="text-slate-600 mt-1">Author: {{ book['authors'] }}</p>
+        <p class="text-slate-600">Year: {{ book['publication_year'] }}</p>
+
+        {% if book['image_url'] %}
+        <img src="{{ book['image_url'] }}" class="mt-4 rounded-xl w-60">
+        {% endif %}
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow mt-6">
+        <h2 class="text-xl font-semibold mb-3">Add a Review</h2>
+
+        <input type="hidden" id="revBookId" value="{{ book['book_id'] }}">
+        <input id="revUser" class="input w-full mb-2" placeholder="Your Name">
+        <input id="revRating" class="input w-full mb-2" type="number" min="1" max="5" placeholder="Rating (1-5)">
+        <textarea id="revComment" class="input w-full mb-2" placeholder="Write your review..."></textarea>
+
+        <button onclick="addReview()" class="btn-primary">Submit</button>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow mt-6">
+        <h2 class="text-xl font-semibold mb-3">Reviews</h2>
+        <div id="reviewList"></div>
+    </div>
+
+    <script>
+        async function loadReviews() {
+            const bookId = document.getElementById("revBookId").value;
+            const res = await fetch(`/api/reviews/${bookId}`);
+            const data = await res.json();
+
+            let list = document.getElementById("reviewList");
+            list.innerHTML = "";
+
+            if (!data.reviews || data.reviews.length === 0) {
+                list.innerHTML = "<p class='text-slate-500'>No reviews yet.</p>";
+                return;
+            }
+
+            data.reviews.forEach(r => {
+                list.innerHTML += `
+                    <div class="p-3 border rounded mb-2">
+                        <h3 class="font-semibold">⭐ ${r.rating} — ${r.user}</h3>
+                        <p>${r.comment}</p>
+                    </div>
+                `;
+            });
+        }
+
+        async function addReview() {
+            const bookId = document.getElementById("revBookId").value;
+            const user = document.getElementById("revUser").value;
+            const rating = document.getElementById("revRating").value;
+            const comment = document.getElementById("revComment").value;
+
+            await fetch("/api/add_review", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ book_id: bookId, user, rating, comment })
+            });
+
+            loadReviews();
+        }
+
+        loadReviews();
+    </script>
+
+</body>
+</html>
